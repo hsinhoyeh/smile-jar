@@ -8,7 +8,7 @@ bopomofo) annotations on every Chinese character. 100% static — no build
 step, no backend, **no login** — everything stays on your device
 (`localStorage`). Deploys straight to **GitHub Pages**.
 
-> 微笑罐 — 給家庭用的每日微笑獎勵紀錄工具。設定目標、寫下每一次獲得微笑的原
+> 笑臉罐 — 給家庭用的每日笑臉獎勵紀錄工具。設定目標、寫下每一次獲得笑臉的原
 > 因，看著罐子慢慢裝滿。純靜態網頁，不需要登入，資料只存在你的裝置上。
 
 **Live site:** https://hsinhoyeh.github.io/smile-jar/
