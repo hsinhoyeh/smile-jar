@@ -1,15 +1,17 @@
 # 😊 Smile Jar
 
-A tiny **daily-smile reward tracker** for families. Set a goal, record a
-reason every time your kid earns a smile, and watch the jar fill up.
+A tiny **daily-smile reward tracker** for families. Set a goal — or several —
+record a reason every time your kid earns (or loses) a smile, and watch the
+jar fill up.
 
 Bilingual out of the box: **English** + **繁體中文 (zh-TW)** with 注音 (zhuyin /
 bopomofo) annotations on every Chinese character. 100% static — no build
 step, no backend, **no login** — everything stays on your device
 (`localStorage`). Deploys straight to **GitHub Pages**.
 
-> 笑臉罐 — 給家庭用的每日笑臉獎勵紀錄工具。設定目標、寫下每一次獲得笑臉的原
-> 因，看著罐子慢慢裝滿。純靜態網頁，不需要登入，資料只存在你的裝置上。
+> 笑臉罐 — 給家庭用的每日笑臉獎勵紀錄工具。設定一個或多個目標、寫下每一次獲
+> 得或扣除笑臉的原因，看著罐子慢慢裝滿。純靜態網頁，不需要登入，資料只存在
+> 你的裝置上。
 
 **Live site:** https://hsinhoyeh.github.io/smile-jar/
 
@@ -17,14 +19,21 @@ step, no backend, **no login** — everything stays on your device
 
 ## ✨ Features
 
-- **Multiple kids**, each with their own adjustable goal (default 99 smiles)
-  and a pick-your-own emoji avatar.
+- **Multiple kids**, each with their own goal and a pick-your-own emoji
+  avatar.
+- **Multi-objective goals** — a goal can be made of several named items
+  whose smile costs add up to the total, e.g. *Trip to the electronics
+  store: 50* + *Buy a lightbulb: 7* = **57 smiles**. A single flat goal
+  (e.g. 99) works too — it's just a goal with one item.
 - **Record a smile** with a required reason — a running log of what earned
   it, not just a number.
+- **Remove a smile** for a rule broken, also with a required reason. Both
+  live in the same honest history log; the jar just never shows below empty.
 - **Jar dashboard** — a fill-up jar + progress bar showing how close each
-  kid is to their goal, plus a lifetime total.
-- **Goal reached** celebration, with the option to raise the goal or start a
-  fresh jar (history is always kept).
+  kid is to their goal, a goal breakdown when there's more than one
+  objective, and a lifetime total.
+- **Goal reached** celebration, with the option to raise the goal (adds a
+  bonus objective) or start a fresh jar (history is always kept).
 - **Bilingual** EN / 繁中 with zhuyin, switchable anytime — no page reload.
 - **No login, no backend.** All data lives in the browser's `localStorage`
   on that one device.
