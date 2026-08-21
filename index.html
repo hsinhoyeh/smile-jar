@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smile Jar</title>
+  <meta name="description" content="Track daily smiles for your kids, set an adjustable goal, and write a reason for every reward. Bilingual EN/繁中, no login, all data stays on your device." />
+
+  <!-- Open Graph -->
+  <meta property="og:type"        content="website" />
+  <meta property="og:url"         content="https://hsinhoyeh.github.io/smile-jar/" />
+  <meta property="og:title"       content="Smile Jar 😊🫙 — Daily Smile Rewards for Kids" />
+  <meta property="og:description" content="Set a smile goal, record a reason for every reward, and watch the jar fill up. Free, no install, no login, bilingual EN / 繁中." />
+  <meta property="og:locale"      content="en_US" />
+  <meta property="og:locale:alternate" content="zh_TW" />
+
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>😊</text></svg>" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-logo">🫙</span>
+      <div>
+        <h1 data-i18n="appTitle">Smile Jar</h1>
+        <p class="tagline" data-i18n="tagline">Collect smiles, reach your goal!</p>
+      </div>
+    </div>
+    <div class="topbar-controls">
+      <button id="howToBtn" class="pill" data-i18n="howTo">How it works</button>
+      <div class="lang-switch" role="group" aria-label="Language">
+        <button class="lang-btn" data-lang="en">EN</button>
+        <button class="lang-btn" data-lang="zh-tw">中文</button>
+      </div>
+    </div>
+  </header>
+
+  <nav id="kidTabs" class="kid-tabs" aria-label="Kids"></nav>
+
+  <main id="app">
+    <section id="emptyState" class="empty-state">
+      <div class="empty-emoji">🫙✨</div>
+      <h2 data-i18n="noKidsTitle">No kids yet</h2>
+      <p data-i18n="noKids">Add a kid to start collecting smiles!</p>
+      <button id="addFirstKidBtn" class="btn btn-primary" data-i18n="addFirstKid">+ Add your first kid</button>
+    </section>
+
+    <section id="dashboard" class="dashboard hidden">
+      <div class="kid-header">
+        <div class="kid-identity">
+          <span id="kidAvatarBig" class="kid-avatar-big">😊</span>
+          <h2 id="kidNameBig">—</h2>
+        </div>
+        <button id="editKidBtn" class="icon-btn" aria-label="Edit kid" title="Edit">⚙️</button>
+      </div>
+
+      <div class="jar-wrap">
+        <div class="jar">
+          <div id="jarFill" class="jar-fill" style="height:0%"></div>
+          <div id="jarEmojis" class="jar-emojis"></div>
+        </div>
+        <div class="jar-stats">
+          <div id="jarCount" class="jar-count">0 / 99</div>
+          <div class="jar-progress-track"><div id="jarProgressBar" class="jar-progress-bar" style="width:0%"></div></div>
+          <div class="jar-total"><span data-i18n="totalEver">Total ever</span>: <strong id="jarTotalEver">0</strong> 😊</div>
+        </div>
+      </div>
+
+      <button id="addSmileBtn" class="btn btn-primary btn-big" data-i18n="addSmileBtn">😊 Add a Smile</button>
+
+      <section class="history">
+        <h3 data-i18n="history">Recent Smiles</h3>
+        <p id="noHistory" class="muted hidden" data-i18n="noHistory">No smiles recorded yet — add the first one!</p>
+        <ul id="historyList" class="history-list"></ul>
+      </section>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span data-i18n="madeWith">Made with</span> ❤️ <span data-i18n="forFamilies">for happy families</span>
+  </footer>
+
+  <!-- Add / Edit Kid modal -->
+  <div id="kidModal" class="modal-backdrop hidden">
+    <div class="modal">
+      <h3 id="kidModalTitle" data-i18n="addKid">+ Add Kid</h3>
+      <label class="field">
+        <span data-i18n="nameLabel">Name</span>
+        <input id="kidNameInput" type="text" maxlength="24" data-i18n-placeholder="namePlaceholder" />
+      </label>
+      <label class="field">
+        <span data-i18n="goalLabel">Goal</span>
+        <input id="kidGoalInput" type="number" min="1" max="9999" value="99" />
+        <small class="hint" data-i18n="goalHint">How many smiles to fill the jar?</small>
+      </label>
+      <div class="field">
+        <span data-i18n="avatarLabel">Pick an icon</span>
+        <div id="avatarPicker" class="avatar-picker"></div>
+      </div>
+      <div class="modal-actions">
+        <button id="deleteKidBtn" class="btn btn-danger hidden" data-i18n="deleteKid">Delete Kid</button>
+        <div class="spacer"></div>
+        <button id="kidCancelBtn" class="btn" data-i18n="cancel">Cancel</button>
+        <button id="kidSaveBtn" class="btn btn-primary" data-i18n="save">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Smile modal -->
+  <div id="smileModal" class="modal-backdrop hidden">
+    <div class="modal">
+      <h3 data-i18n="addSmileBtn">😊 Add a Smile</h3>
+      <label class="field">
+        <span data-i18n="reasonLabel">What did they do?</span>
+        <textarea id="reasonInput" rows="3" maxlength="140" data-i18n-placeholder="reasonPlaceholder"></textarea>
+      </label>
+      <label class="field">
+        <span data-i18n="amountLabel">How many smiles?</span>
+        <div class="amount-stepper">
+          <button type="button" id="amountMinus" class="step-btn" aria-label="minus">−</button>
+          <span id="amountValue" class="amount-value">1</span>
+          <button type="button" id="amountPlus" class="step-btn" aria-label="plus">+</button>
+        </div>
+      </label>
+      <div class="modal-actions">
+        <div class="spacer"></div>
+        <button id="smileCancelBtn" class="btn" data-i18n="cancel">Cancel</button>
+        <button id="smileSaveBtn" class="btn btn-primary" data-i18n="save">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Goal reached celebration -->
+  <div id="celebrateModal" class="modal-backdrop hidden">
+    <div class="modal celebrate">
+      <div class="confetti">🎉🎊🎉</div>
+      <h3 data-i18n="goalReachedTitle">Goal Reached! 🎉</h3>
+      <p id="celebrateBody"></p>
+      <div class="modal-actions modal-actions-stack">
+        <button id="increaseGoalBtn" class="btn btn-primary" data-i18n="increaseGoal">Increase Goal</button>
+        <button id="startNewJarBtn" class="btn" data-i18n="startNewJar">Start a New Jar</button>
+        <button id="celebrateCloseBtn" class="btn btn-link" data-i18n="close">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- How it works -->
+  <div id="howToModal" class="modal-backdrop hidden">
+    <div class="modal">
+      <h3 data-i18n="howTo">How it works</h3>
+      <p data-i18n="howto1">Whenever your kid does something great, tap 😊 Add a Smile and write why.</p>
+      <p data-i18n="howto2">Watch the jar fill up as smiles add up toward the goal.</p>
+      <p data-i18n="howto3">Reach the goal to celebrate — then start a new jar or raise the goal!</p>
+      <div class="modal-actions">
+        <div class="spacer"></div>
+        <button id="howToCloseBtn" class="btn btn-primary" data-i18n="gotIt">Got it!</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/zhuyin.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
