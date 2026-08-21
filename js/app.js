@@ -8,6 +8,7 @@
   let editingKidId = null; // null while the kid modal is in "add" mode
   let pickedAvatar = AVATARS[0];
   let smileAmount = 1;
+  let smileMode = "add"; // "add" | "remove" — which action the smile modal is doing
 
   /* ---------------------------------------------------------------- */
   /* Rendering                                                         */
@@ -72,17 +73,19 @@
 
     const locale = I18N.lang === "zh-tw" ? "zh-TW" : "en-US";
     rewards.forEach((r) => {
+      const isPunish = r.amount < 0;
       const li = document.createElement("li");
-      li.className = "history-item";
+      li.className = "history-item" + (isPunish ? " history-item-punish" : "");
       const date = new Date(r.at).toLocaleString(locale, {
         month: "short", day: "numeric", hour: "numeric", minute: "2-digit",
       });
       const reasonSpan = document.createElement("span");
       reasonSpan.className = "history-reason";
-      reasonSpan.textContent = r.reason || "😊";
+      reasonSpan.textContent = r.reason || (isPunish ? "😢" : "😊");
       const metaSpan = document.createElement("span");
       metaSpan.className = "history-meta";
-      metaSpan.textContent = `+${r.amount} · ${date}`;
+      const sign = isPunish ? r.amount : `+${r.amount}`;
+      metaSpan.textContent = `${sign} · ${date}`;
       const delBtn = document.createElement("button");
       delBtn.className = "icon-btn history-delete";
       delBtn.setAttribute("aria-label", "delete");
@@ -170,7 +173,15 @@
     smileAmount = Math.max(1, Math.min(99, n));
     $("amountValue").textContent = smileAmount;
   }
-  function openSmileModal() {
+  function openSmileModal(mode) {
+    smileMode = mode;
+    const isRemove = mode === "remove";
+    I18N.setText($("smileModalTitle"), I18N.t(isRemove ? "removeSmileBtn" : "addSmileBtn"));
+    I18N.setText($("reasonLabelText"), I18N.t(isRemove ? "removeReasonLabel" : "reasonLabel"));
+    I18N.setText($("amountLabelText"), I18N.t(isRemove ? "removeAmountLabel" : "amountLabel"));
+    $("reasonInput").placeholder = I18N.t(isRemove ? "removeReasonPlaceholder" : "reasonPlaceholder");
+    $("smileSaveBtn").classList.toggle("btn-danger", isRemove);
+    $("smileSaveBtn").classList.toggle("btn-primary", !isRemove);
     $("reasonInput").value = "";
     setAmount(1);
     $("smileModal").classList.remove("hidden");
@@ -187,7 +198,8 @@
     if (!reason) { alert(I18N.t("reasonRequired")); return; }
 
     const before = Store.currentCount(kidId);
-    Store.addReward(kidId, { amount: smileAmount, reason });
+    const signedAmount = smileMode === "remove" ? -smileAmount : smileAmount;
+    Store.addReward(kidId, { amount: signedAmount, reason });
     const after = Store.currentCount(kidId);
     closeSmileModal();
     renderAll();
@@ -235,7 +247,8 @@
     $("deleteKidBtn").addEventListener("click", deleteKidNow);
     $("kidModal").addEventListener("click", (e) => { if (e.target === e.currentTarget) closeKidModal(); });
 
-    $("addSmileBtn").addEventListener("click", openSmileModal);
+    $("addSmileBtn").addEventListener("click", () => openSmileModal("add"));
+    $("removeSmileBtn").addEventListener("click", () => openSmileModal("remove"));
     $("smileCancelBtn").addEventListener("click", closeSmileModal);
     $("smileSaveBtn").addEventListener("click", saveSmile);
     $("amountMinus").addEventListener("click", () => setAmount(smileAmount - 1));

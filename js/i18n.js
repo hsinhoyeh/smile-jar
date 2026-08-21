@@ -34,6 +34,10 @@
       reasonLabel: "What did they do?",
       reasonPlaceholder: "e.g. Shared toys with sister",
       amountLabel: "How many smiles?",
+      removeSmileBtn: "➖ Remove Smiles",
+      removeReasonLabel: "What happened?",
+      removeReasonPlaceholder: "e.g. Didn't listen at bedtime",
+      removeAmountLabel: "How many to remove?",
       nameRequired: "Please enter a name",
       reasonRequired: "Please write a reason",
 
@@ -81,6 +85,10 @@
       reasonLabel: "他做了什麼好事呢？",
       reasonPlaceholder: "例如：主動和妹妹分享玩具",
       amountLabel: "要加幾個微笑？",
+      removeSmileBtn: "➖ 扣除微笑",
+      removeReasonLabel: "發生了什麼事呢？",
+      removeReasonPlaceholder: "例如：睡覺時間不聽話",
+      removeAmountLabel: "要扣除幾個？",
       nameRequired: "請輸入名字",
       reasonRequired: "請寫下原因",
 

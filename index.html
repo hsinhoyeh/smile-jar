@@ -67,6 +67,7 @@
       </div>
 
       <button id="addSmileBtn" class="btn btn-primary btn-big" data-i18n="addSmileBtn">😊 Add a Smile</button>
+      <button id="removeSmileBtn" class="btn btn-remove" data-i18n="removeSmileBtn">➖ Remove Smiles</button>
 
       <section class="history">
         <h3 data-i18n="history">Recent Smiles</h3>
@@ -106,16 +107,16 @@
     </div>
   </div>
 
-  <!-- Add Smile modal -->
+  <!-- Add / Remove Smile modal (mode is set by app.js before opening) -->
   <div id="smileModal" class="modal-backdrop hidden">
     <div class="modal">
-      <h3 data-i18n="addSmileBtn">😊 Add a Smile</h3>
+      <h3 id="smileModalTitle">😊 Add a Smile</h3>
       <label class="field">
-        <span data-i18n="reasonLabel">What did they do?</span>
-        <textarea id="reasonInput" rows="3" maxlength="140" data-i18n-placeholder="reasonPlaceholder"></textarea>
+        <span id="reasonLabelText">What did they do?</span>
+        <textarea id="reasonInput" rows="3" maxlength="140"></textarea>
       </label>
       <label class="field">
-        <span data-i18n="amountLabel">How many smiles?</span>
+        <span id="amountLabelText">How many smiles?</span>
         <div class="amount-stepper">
           <button type="button" id="amountMinus" class="step-btn" aria-label="minus">−</button>
           <span id="amountValue" class="amount-value">1</span>

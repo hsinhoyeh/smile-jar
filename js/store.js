@@ -75,10 +75,13 @@
     /* ---- rewards (smiles) ---- */
     addReward(kidId, { amount, reason }) {
       const data = load();
+      const signed = Number(amount) || 1;
+      const magnitude = Math.max(1, Math.min(99, Math.abs(signed)));
       const reward = {
         id: uid(),
         kidId,
-        amount: Math.max(1, Number(amount) || 1),
+        // Positive = smile earned, negative = smile removed (a punishment).
+        amount: signed < 0 ? -magnitude : magnitude,
         reason: (reason || "").trim().slice(0, 140),
         at: Date.now(),
       };
@@ -100,18 +103,21 @@
 
     /* ---- jar progress ---- */
     // Smiles counted toward the CURRENT jar (since the last reset/new-jar).
+    // Punishments can pull this down, but the jar never shows below empty.
     currentCount(kidId) {
       const kid = this.getKid(kidId);
       if (!kid) return 0;
-      return load()
+      const sum = load()
         .rewards.filter((r) => r.kidId === kidId && r.at >= kid.cycleStart)
         .reduce((sum, r) => sum + r.amount, 0);
+      return Math.max(0, sum);
     },
     // Lifetime total, across every jar this kid has ever filled.
     totalEver(kidId) {
-      return load()
+      const sum = load()
         .rewards.filter((r) => r.kidId === kidId)
         .reduce((sum, r) => sum + r.amount, 0);
+      return Math.max(0, sum);
     },
     // Start a fresh jar toward the same (or a new) goal; history is kept.
     startNewJar(kidId, newGoal) {

@@ -133,7 +133,11 @@ body {
 .btn-primary { background: linear-gradient(180deg, #ffb060, var(--primary-d)); color: #fff; }
 .btn-danger { background: #fff; color: var(--danger); border: 2px solid var(--danger); }
 .btn-link { background: transparent; box-shadow: none; color: var(--muted); font-weight: 700; }
-.btn-big { display: block; width: 100%; font-size: 1.15rem; padding: 16px; margin-bottom: 24px; }
+.btn-big { display: block; width: 100%; font-size: 1.15rem; padding: 16px; margin-bottom: 10px; }
+.btn-remove {
+  display: block; width: 100%; background: transparent; box-shadow: none;
+  color: var(--danger); font-size: .9rem; padding: 6px; margin-bottom: 24px;
+}
 
 /* ---------- history ---------- */
 .history h3 { margin-bottom: 10px; }
@@ -146,6 +150,8 @@ body {
 .history-reason { font-weight: 700; overflow-wrap: break-word; }
 .history-meta { font-size: .8rem; color: var(--muted); }
 .history-delete { width: 32px; height: 32px; font-size: 1.1rem; flex: 0 0 auto; color: var(--danger); }
+.history-item-punish { border: 2px solid #ffcdd2; }
+.history-item-punish .history-meta { color: var(--danger); font-weight: 700; }
 
 /* ---------- footer ---------- */
 .footer { text-align: center; color: var(--muted); font-size: .85rem; padding: 20px; }
