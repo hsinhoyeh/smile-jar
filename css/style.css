@@ -123,6 +123,17 @@ body {
 .jar-progress-bar { height: 100%; background: linear-gradient(90deg, var(--green), var(--green-d)); transition: width .5s ease; }
 .jar-total { margin-top: 8px; font-size: .9rem; color: var(--muted); }
 
+/* ---------- goal breakdown ---------- */
+.objectives-breakdown { max-width: 260px; margin: 0 auto 22px; }
+.objectives-breakdown h3 { font-size: 1rem; margin-bottom: 8px; color: var(--muted); }
+.objectives-breakdown-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.objectives-breakdown-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  background: var(--panel); border-radius: 12px; padding: 8px 12px; box-shadow: var(--shadow);
+  font-weight: 700; font-size: .9rem;
+}
+.objectives-breakdown-cost { color: var(--primary-d); flex: 0 0 auto; }
+
 /* ---------- buttons ---------- */
 .btn {
   border: none; border-radius: 14px; padding: 12px 18px; font-weight: 800;
@@ -174,6 +185,26 @@ body {
 }
 .field input:focus, .field textarea:focus { outline: none; border-color: var(--accent); }
 .hint { font-weight: 500; color: var(--muted); font-size: .8rem; }
+
+.objective-rows { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.objective-row { display: flex; align-items: center; gap: 6px; }
+.objective-title {
+  flex: 1; min-width: 0; font: inherit; font-weight: 500; padding: 9px 10px;
+  border-radius: 12px; border: 2px solid #e0e0e0;
+}
+.objective-cost {
+  width: 64px; font: inherit; font-weight: 500; padding: 9px 8px;
+  border-radius: 12px; border: 2px solid #e0e0e0; text-align: center;
+}
+.objective-title:focus, .objective-cost:focus { outline: none; border-color: var(--accent); }
+.objective-remove {
+  width: 34px; height: 34px; font-size: 1.1rem; flex: 0 0 auto; color: var(--danger);
+}
+.btn-link-small {
+  background: transparent; box-shadow: none; color: var(--accent); font-weight: 700;
+  font-size: .85rem; padding: 6px 0; text-align: left;
+}
+.objective-total { font-weight: 800; color: var(--primary-d); margin-top: 6px; font-size: .95rem; }
 .modal-actions { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
 .modal-actions .spacer { flex: 1; }
 .modal-actions-stack { flex-direction: column; align-items: stretch; }

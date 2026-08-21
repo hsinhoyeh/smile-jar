@@ -7,6 +7,7 @@
 
   let editingKidId = null; // null while the kid modal is in "add" mode
   let pickedAvatar = AVATARS[0];
+  let objectiveRows = []; // [{title, cost}] while the kid modal is open
   let smileAmount = 1;
   let smileMode = "add"; // "add" | "remove" — which action the smile modal is doing
 
@@ -52,17 +53,41 @@
     $("kidAvatarBig").textContent = kid.avatar;
     $("kidNameBig").textContent = kid.name;
 
+    const goal = Store.goalFor(kid);
     const count = Store.currentCount(kid.id);
-    const pct = Math.max(0, Math.min(100, Math.round((count / kid.goal) * 100)));
+    const pct = Math.max(0, Math.min(100, Math.round((count / goal) * 100)));
     $("jarFill").style.height = pct + "%";
     $("jarProgressBar").style.width = pct + "%";
-    I18N.setText($("jarCount"), I18N.t("smilesOfGoal", { count, goal: kid.goal }));
+    I18N.setText($("jarCount"), I18N.t("smilesOfGoal", { count, goal }));
     $("jarTotalEver").textContent = Store.totalEver(kid.id);
 
     const emojiCount = Math.min(count, MAX_JAR_EMOJIS);
     $("jarEmojis").textContent = kid.avatar.repeat(emojiCount);
 
+    renderObjectivesBreakdown(kid);
     renderHistory(kid.id);
+  }
+
+  // Only worth showing when the goal is actually made of more than one
+  // named item — a single-objective kid already sees the total in the jar.
+  function renderObjectivesBreakdown(kid) {
+    const show = kid.objectives.length > 1;
+    $("objectivesBreakdown").classList.toggle("hidden", !show);
+    if (!show) return;
+    const list = $("objectivesBreakdownList");
+    list.innerHTML = "";
+    kid.objectives.forEach((o) => {
+      const li = document.createElement("li");
+      li.className = "objectives-breakdown-item";
+      const titleSpan = document.createElement("span");
+      titleSpan.textContent = o.title;
+      const costSpan = document.createElement("span");
+      costSpan.className = "objectives-breakdown-cost";
+      costSpan.textContent = o.cost;
+      li.appendChild(titleSpan);
+      li.appendChild(costSpan);
+      list.appendChild(li);
+    });
   }
 
   function renderHistory(kidId) {
@@ -131,14 +156,66 @@
     });
   }
 
+  function updateObjectiveTotal() {
+    const total = objectiveRows.reduce((sum, o) => sum + (Number(o.cost) || 0), 0);
+    I18N.setText($("objectiveTotal"), I18N.t("totalGoalLabel", { total }));
+  }
+
+  function renderObjectiveRows() {
+    const wrap = $("objectiveRows");
+    wrap.innerHTML = "";
+    objectiveRows.forEach((row, i) => {
+      const rowEl = document.createElement("div");
+      rowEl.className = "objective-row";
+
+      const titleInput = document.createElement("input");
+      titleInput.type = "text";
+      titleInput.className = "objective-title";
+      titleInput.maxLength = 60;
+      titleInput.placeholder = I18N.t("objectiveTitlePlaceholder");
+      titleInput.value = row.title;
+      titleInput.addEventListener("input", () => { row.title = titleInput.value; });
+
+      const costInput = document.createElement("input");
+      costInput.type = "number";
+      costInput.className = "objective-cost";
+      costInput.min = "1";
+      costInput.max = "9999";
+      costInput.value = row.cost;
+      costInput.addEventListener("input", () => {
+        row.cost = costInput.value;
+        updateObjectiveTotal();
+      });
+
+      const removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.className = "icon-btn objective-remove" + (objectiveRows.length <= 1 ? " hidden" : "");
+      removeBtn.setAttribute("aria-label", I18N.t("removeObjective"));
+      removeBtn.textContent = "×";
+      removeBtn.addEventListener("click", () => {
+        objectiveRows.splice(i, 1);
+        renderObjectiveRows();
+      });
+
+      rowEl.appendChild(titleInput);
+      rowEl.appendChild(costInput);
+      rowEl.appendChild(removeBtn);
+      wrap.appendChild(rowEl);
+    });
+    updateObjectiveTotal();
+  }
+
   function openKidModal(kid) {
     editingKidId = kid ? kid.id : null;
     pickedAvatar = kid ? kid.avatar : AVATARS[0];
+    objectiveRows = kid
+      ? kid.objectives.map((o) => ({ title: o.title, cost: o.cost }))
+      : [{ title: "🎯", cost: Store.DEFAULT_GOAL }];
     $("kidNameInput").value = kid ? kid.name : "";
-    $("kidGoalInput").value = kid ? kid.goal : Store.DEFAULT_GOAL;
     I18N.setKey($("kidModalTitle"), kid ? "edit" : "addKid");
     $("deleteKidBtn").classList.toggle("hidden", !kid);
     renderAvatarPicker();
+    renderObjectiveRows();
     $("kidModal").classList.remove("hidden");
     $("kidNameInput").focus();
   }
@@ -148,9 +225,12 @@
   function saveKid() {
     const name = $("kidNameInput").value.trim();
     if (!name) { alert(I18N.t("nameRequired")); return; }
-    const goal = Number($("kidGoalInput").value) || Store.DEFAULT_GOAL;
-    if (editingKidId) Store.updateKid(editingKidId, { name, goal, avatar: pickedAvatar });
-    else Store.addKid({ name, goal, avatar: pickedAvatar });
+    const validObjectives = objectiveRows
+      .map((o) => ({ title: (o.title || "").trim(), cost: Number(o.cost) }))
+      .filter((o) => o.title && o.cost > 0);
+    if (!validObjectives.length) { alert(I18N.t("objectivesRequired")); return; }
+    if (editingKidId) Store.updateKid(editingKidId, { name, objectives: validObjectives, avatar: pickedAvatar });
+    else Store.addKid({ name, objectives: validObjectives, avatar: pickedAvatar });
     closeKidModal();
     renderAll();
   }
@@ -197,6 +277,7 @@
     const reason = $("reasonInput").value.trim();
     if (!reason) { alert(I18N.t("reasonRequired")); return; }
 
+    const goal = Store.goalFor(kid);
     const before = Store.currentCount(kidId);
     const signedAmount = smileMode === "remove" ? -smileAmount : smileAmount;
     Store.addReward(kidId, { amount: signedAmount, reason });
@@ -204,7 +285,7 @@
     closeSmileModal();
     renderAll();
 
-    if (before < kid.goal && after >= kid.goal) openCelebrate(kid);
+    if (before < goal && after >= goal) openCelebrate(kid);
   }
 
   /* ---------------------------------------------------------------- */
@@ -212,7 +293,7 @@
   /* ---------------------------------------------------------------- */
 
   function openCelebrate(kid) {
-    I18N.setText($("celebrateBody"), I18N.t("goalReachedBody", { name: kid.name, goal: kid.goal }));
+    I18N.setText($("celebrateBody"), I18N.t("goalReachedBody", { name: kid.name, goal: Store.goalFor(kid) }));
     $("celebrateModal").classList.remove("hidden");
   }
   function closeCelebrate() {
@@ -222,8 +303,10 @@
     const kidId = Store.getActiveKidId();
     const kid = Store.getKid(kidId);
     if (!kid) return;
-    const bump = Math.max(10, Math.round(kid.goal * 0.5));
-    Store.updateKid(kidId, { goal: kid.goal + bump });
+    const goal = Store.goalFor(kid);
+    const bump = Math.max(10, Math.round(goal * 0.5));
+    const objectives = kid.objectives.concat([{ title: I18N.t("bonusGoalTitle"), cost: bump }]);
+    Store.updateKid(kidId, { objectives });
     closeCelebrate();
     renderAll();
   }
@@ -245,6 +328,10 @@
     $("kidCancelBtn").addEventListener("click", closeKidModal);
     $("kidSaveBtn").addEventListener("click", saveKid);
     $("deleteKidBtn").addEventListener("click", deleteKidNow);
+    $("addObjectiveBtn").addEventListener("click", () => {
+      objectiveRows.push({ title: "", cost: "" });
+      renderObjectiveRows();
+    });
     $("kidModal").addEventListener("click", (e) => { if (e.target === e.currentTarget) closeKidModal(); });
 
     $("addSmileBtn").addEventListener("click", () => openSmileModal("add"));

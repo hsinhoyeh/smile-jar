@@ -4,18 +4,47 @@
   const KEY_DATA = "smj_data"; // { kids: [...], rewards: [...], activeKidId }
   const DEFAULT_GOAL = 99;
 
+  function uid() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
+
+  // A kid's goal is the total of one or more named objectives (e.g. "Trip to
+  // the electronics store: 50" + "Buy a lightbulb: 7" = 57). Drops empty
+  // rows, clamps each cost, and falls back to a single default objective if
+  // nothing valid is left.
+  function sanitizeObjectives(list) {
+    const clean = (Array.isArray(list) ? list : [])
+      .map((o) => ({
+        id: o.id || uid(),
+        title: (o.title || "").trim().slice(0, 60),
+        cost: Math.max(1, Math.min(9999, Math.round(Number(o.cost)) || 0)),
+      }))
+      .filter((o) => o.title && o.cost > 0);
+    return clean.length ? clean : [{ id: uid(), title: "🎯", cost: DEFAULT_GOAL }];
+  }
+
   function load() {
     try {
       const data = JSON.parse(localStorage.getItem(KEY_DATA));
-      if (data && Array.isArray(data.kids) && Array.isArray(data.rewards)) return data;
+      if (data && Array.isArray(data.kids) && Array.isArray(data.rewards)) {
+        let migrated = false;
+        data.kids.forEach((kid) => {
+          // Legacy kids only had a flat `goal` number — fold it into a
+          // single objective so `goalFor()` is the only source of truth.
+          if (!Array.isArray(kid.objectives)) {
+            kid.objectives = [{ id: uid(), title: "🎯", cost: kid.goal || DEFAULT_GOAL }];
+            delete kid.goal;
+            migrated = true;
+          }
+        });
+        if (migrated) save(data);
+        return data;
+      }
     } catch (e) {}
     return { kids: [], rewards: [], activeKidId: null };
   }
   function save(data) {
     localStorage.setItem(KEY_DATA, JSON.stringify(data));
-  }
-  function uid() {
-    return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   }
 
   const Store = {
@@ -28,13 +57,17 @@
     getKid(id) {
       return load().kids.find((k) => k.id === id) || null;
     },
-    addKid({ name, goal, avatar }) {
+    // Total smiles needed — the sum of every objective's cost.
+    goalFor(kid) {
+      return kid.objectives.reduce((sum, o) => sum + o.cost, 0);
+    },
+    addKid({ name, objectives, avatar }) {
       const data = load();
       const now = Date.now();
       const kid = {
         id: uid(),
         name: (name || "").trim().slice(0, 24),
-        goal: Math.max(1, Number(goal) || DEFAULT_GOAL),
+        objectives: sanitizeObjectives(objectives),
         avatar: avatar || "😊",
         cycleStart: now,
         createdAt: now,
@@ -44,12 +77,12 @@
       save(data);
       return kid;
     },
-    updateKid(id, { name, goal, avatar }) {
+    updateKid(id, { name, objectives, avatar }) {
       const data = load();
       const kid = data.kids.find((k) => k.id === id);
       if (!kid) return null;
       if (name !== undefined) kid.name = (name || "").trim().slice(0, 24);
-      if (goal !== undefined) kid.goal = Math.max(1, Number(goal) || DEFAULT_GOAL);
+      if (objectives !== undefined) kid.objectives = sanitizeObjectives(objectives);
       if (avatar !== undefined) kid.avatar = avatar;
       save(data);
       return kid;
@@ -119,8 +152,8 @@
         .reduce((sum, r) => sum + r.amount, 0);
       return Math.max(0, sum);
     },
-    // Start a fresh jar toward the same (or a new) goal; history is kept.
-    startNewJar(kidId, newGoal) {
+    // Start a fresh jar toward the same (or a new) set of objectives; history is kept.
+    startNewJar(kidId, newObjectives) {
       const data = load();
       const kid = data.kids.find((k) => k.id === kidId);
       if (!kid) return null;
@@ -131,7 +164,7 @@
         .filter((r) => r.kidId === kidId)
         .reduce((max, r) => Math.max(max, r.at), 0);
       kid.cycleStart = Math.max(Date.now(), lastRewardAt + 1);
-      if (newGoal !== undefined) kid.goal = Math.max(1, Number(newGoal) || DEFAULT_GOAL);
+      if (newObjectives !== undefined) kid.objectives = sanitizeObjectives(newObjectives);
       save(data);
       return kid;
     },

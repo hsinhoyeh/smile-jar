@@ -66,6 +66,11 @@
         </div>
       </div>
 
+      <section id="objectivesBreakdown" class="objectives-breakdown hidden">
+        <h3 data-i18n="goalBreakdown">Goal breakdown</h3>
+        <ul id="objectivesBreakdownList" class="objectives-breakdown-list"></ul>
+      </section>
+
       <button id="addSmileBtn" class="btn btn-primary btn-big" data-i18n="addSmileBtn">😊 Add a Smile</button>
       <button id="removeSmileBtn" class="btn btn-remove" data-i18n="removeSmileBtn">➖ Remove Smiles</button>
 
@@ -89,11 +94,13 @@
         <span data-i18n="nameLabel">Name</span>
         <input id="kidNameInput" type="text" maxlength="24" data-i18n-placeholder="namePlaceholder" />
       </label>
-      <label class="field">
+      <div class="field">
         <span data-i18n="goalLabel">Goal</span>
-        <input id="kidGoalInput" type="number" min="1" max="9999" value="99" />
-        <small class="hint" data-i18n="goalHint">How many smiles to fill the jar?</small>
-      </label>
+        <small class="hint" data-i18n="goalHint">Add one or more things they're earning smiles for — the goal is the total.</small>
+        <div id="objectiveRows" class="objective-rows"></div>
+        <button type="button" id="addObjectiveBtn" class="btn btn-link-small" data-i18n="addObjective">+ Add another goal</button>
+        <div id="objectiveTotal" class="objective-total"></div>
+      </div>
       <div class="field">
         <span data-i18n="avatarLabel">Pick an icon</span>
         <div id="avatarPicker" class="avatar-picker"></div>
