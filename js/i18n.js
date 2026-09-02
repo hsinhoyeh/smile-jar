@@ -6,6 +6,11 @@
     en: {
       appTitle: "Smile Jar",
       tagline: "Collect smiles, reach your goal!",
+      exportBtn: "⬇️ Export",
+      importBtn: "⬆️ Import",
+      importConfirm: "Importing will replace all current kids and smile history with this backup file. Continue?",
+      importSuccess: "Backup imported successfully!",
+      importError: "Couldn't read that file — please pick a valid Smile Jar backup (.json).",
       howTo: "How it works",
       gotIt: "Got it!",
       howto1: "Whenever your kid does something great, tap 😊 Add a Smile and write why.",
@@ -64,6 +69,11 @@
     "zh-tw": {
       appTitle: "笑臉罐",
       tagline: "蒐集笑臉，一起達成目標！",
+      exportBtn: "⬇️ 匯出",
+      importBtn: "⬆️ 匯入",
+      importConfirm: "匯入將會覆蓋目前所有小朋友與笑臉紀錄，確定要繼續嗎？",
+      importSuccess: "備份匯入成功！",
+      importError: "無法讀取這個檔案，請選擇正確的笑臉罐備份檔（.json）。",
       howTo: "怎麼玩",
       gotIt: "知道了",
       howto1: "只要小朋友做了值得鼓勵的好事，就點「😊 新增笑臉」，寫下原因。",

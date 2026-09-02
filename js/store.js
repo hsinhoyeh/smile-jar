@@ -23,6 +23,34 @@
     return clean.length ? clean : [{ id: uid(), title: "🎯", cost: DEFAULT_GOAL }];
   }
 
+  // Rebuild a kid from an imported (possibly hand-edited) backup, the same
+  // way addKid() would build one from form input.
+  function sanitizeKid(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    return {
+      id: typeof raw.id === "string" && raw.id ? raw.id : uid(),
+      name: (raw.name || "").toString().trim().slice(0, 24),
+      objectives: sanitizeObjectives(raw.objectives),
+      avatar: (raw.avatar || "😊").toString(),
+      cycleStart: Number(raw.cycleStart) || Date.now(),
+      createdAt: Number(raw.createdAt) || Date.now(),
+    };
+  }
+  // Drops rewards pointing at a kid that didn't survive sanitizeKid().
+  function sanitizeReward(raw, validKidIds) {
+    if (!raw || typeof raw !== "object" || !validKidIds.has(raw.kidId)) return null;
+    const amount = Math.round(Number(raw.amount));
+    if (!amount) return null;
+    const magnitude = Math.max(1, Math.min(99, Math.abs(amount)));
+    return {
+      id: typeof raw.id === "string" && raw.id ? raw.id : uid(),
+      kidId: raw.kidId,
+      amount: amount < 0 ? -magnitude : magnitude,
+      reason: (raw.reason || "").toString().trim().slice(0, 140),
+      at: Number(raw.at) || Date.now(),
+    };
+  }
+
   function load() {
     try {
       const data = JSON.parse(localStorage.getItem(KEY_DATA));
@@ -167,6 +195,37 @@
       if (newObjectives !== undefined) kid.objectives = sanitizeObjectives(newObjectives);
       save(data);
       return kid;
+    },
+
+    /* ---- export / import (backup & restore) ---- */
+    // Everything needed to restore the jar elsewhere: kids, full reward
+    // history, and which tab was active.
+    exportData() {
+      const data = load();
+      return {
+        app: "smile-jar",
+        version: 1,
+        exportedAt: Date.now(),
+        kids: data.kids,
+        rewards: data.rewards,
+        activeKidId: data.activeKidId,
+      };
+    },
+    // Replaces ALL local data with a previously exported backup. Re-sanitizes
+    // every field so a hand-edited or older-format file can't corrupt the
+    // app. Returns { ok } or { ok: false, error }.
+    importData(payload) {
+      if (!payload || typeof payload !== "object" || !Array.isArray(payload.kids) || !Array.isArray(payload.rewards)) {
+        return { ok: false, error: "invalid" };
+      }
+      const kids = payload.kids.map(sanitizeKid).filter(Boolean);
+      const kidIds = new Set(kids.map((k) => k.id));
+      const rewards = payload.rewards
+        .map((r) => sanitizeReward(r, kidIds))
+        .filter(Boolean);
+      const activeKidId = kidIds.has(payload.activeKidId) ? payload.activeKidId : (kids[0] ? kids[0].id : null);
+      save({ kids, rewards, activeKidId });
+      return { ok: true, kidCount: kids.length, rewardCount: rewards.length };
     },
   };
 

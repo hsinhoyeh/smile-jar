@@ -319,6 +319,43 @@
   }
 
   /* ---------------------------------------------------------------- */
+  /* Export / Import (backup & restore)                                */
+  /* ---------------------------------------------------------------- */
+
+  function exportBackup() {
+    const payload = Store.exportData();
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `smile-jar-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function importBackupFile(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      let payload;
+      try {
+        payload = JSON.parse(reader.result);
+      } catch (e) {
+        alert(I18N.t("importError"));
+        return;
+      }
+      if (!confirm(I18N.t("importConfirm"))) return;
+      const result = Store.importData(payload);
+      if (!result.ok) { alert(I18N.t("importError")); return; }
+      renderAll();
+      alert(I18N.t("importSuccess"));
+    };
+    reader.readAsText(file);
+  }
+
+  /* ---------------------------------------------------------------- */
   /* Wiring                                                             */
   /* ---------------------------------------------------------------- */
 
@@ -346,6 +383,13 @@
     $("startNewJarBtn").addEventListener("click", startNewJarNow);
     $("celebrateCloseBtn").addEventListener("click", closeCelebrate);
     $("celebrateModal").addEventListener("click", (e) => { if (e.target === e.currentTarget) closeCelebrate(); });
+
+    $("exportBtn").addEventListener("click", exportBackup);
+    $("importBtn").addEventListener("click", () => $("importFileInput").click());
+    $("importFileInput").addEventListener("change", (e) => {
+      importBackupFile(e.target.files[0]);
+      e.target.value = ""; // allow importing the same file again later
+    });
 
     $("howToBtn").addEventListener("click", () => $("howToModal").classList.remove("hidden"));
     $("howToCloseBtn").addEventListener("click", () => $("howToModal").classList.add("hidden"));
