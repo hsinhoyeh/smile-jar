@@ -250,6 +250,15 @@ body.zh { line-height: 1.4; }
 }
 
 /* ---------- quests (晚安任務, 上學任務) ---------- */
+/* Quests sit side by side on wider screens (the row breaks out of the
+   520px dashboard column); on phones they stack. */
+#quests { display: grid; grid-template-columns: 1fr; gap: 0 16px; align-items: start; }
+@media (min-width: 640px) {
+  #quests {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    width: min(96vw, 1000px); position: relative; left: 50%; transform: translateX(-50%);
+  }
+}
 .quest {
   background: #eef0ff; border-radius: var(--radius); padding: 14px 16px;
   margin: 16px 0; box-shadow: var(--shadow);
@@ -271,3 +280,5 @@ body.zh { line-height: 1.4; }
 .quest-badge.earned { opacity: 1; font-weight: 700; }
 .quest-note { font-size: .85rem; margin: 8px 0 0; }
 .quest-edit { margin-bottom: 12px; }
+.quest-times { display: flex; gap: 12px; }
+.quest-times .field { flex: 1; margin-bottom: 6px; }

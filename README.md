@@ -38,7 +38,9 @@ step, no backend, **no login** — everything stays on your device
   - 🚗 **Outing (出門任務)** — pack own snack & water bottle, tell a summary of
     where you went, stay calm the whole time. No time window.
 
-  The claim cutoff (timed quests) and the task list are editable per kid. A
+  The claim window (opens at / closes at, for timed quests) and the task list
+  are editable per kid, so each child can have their own bedtime and wake-up
+  time; the times above are just the defaults. A
   missed day just means no smile — nothing is deducted. Timed quests track a
   consecutive-day streak with 3- and 7-day milestones. Quest progress is
   included in export/import (older backups still import).

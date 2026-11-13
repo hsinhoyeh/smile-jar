@@ -109,7 +109,7 @@
       const timed = Store.questIsTimed(q);
       const win = today.claimed ? "open" : Store.questWindow(kid, q);
       const cutoff = timed ? Store.questCutoffFor(kid, q) : "";
-      const from = timed ? Store.questFromFor(q) : "";
+      const from = timed ? Store.questFromFor(kid, q) : "";
 
       const sec = document.createElement("section");
       sec.className = `quest quest-${q}`;
@@ -330,7 +330,23 @@
       time.value = kid ? Store.questCutoffFor(kid, q) : Store.questDefaultCutoff(q);
       timeLabel.appendChild(timeText);
       timeLabel.appendChild(time);
-      block.appendChild(timeLabel);
+
+      const fromLabel = document.createElement("label");
+      fromLabel.className = Store.questIsTimed(q) ? "field" : "hidden";
+      const fromText = document.createElement("span");
+      I18N.setText(fromText, I18N.t("questFromLabel"));
+      const fromInput = document.createElement("input");
+      fromInput.type = "time";
+      fromInput.id = `questFrom_${q}`;
+      fromInput.value = kid ? Store.questFromFor(kid, q) : Store.questDefaultFrom(q);
+      fromLabel.appendChild(fromText);
+      fromLabel.appendChild(fromInput);
+
+      const times = document.createElement("div");
+      times.className = "quest-times";
+      times.appendChild(fromLabel);
+      times.appendChild(timeLabel);
+      block.appendChild(times);
 
       const hint = document.createElement("small");
       hint.className = "hint";
@@ -373,6 +389,11 @@
       .map((o) => ({ title: (o.title || "").trim(), cost: Number(o.cost) }))
       .filter((o) => o.title && o.cost > 0);
     if (!validObjectives.length) { alert(I18N.t("objectivesRequired")); return; }
+    const badWindow = Store.QUEST_IDS.some((q) => {
+      const f = $(`questFrom_${q}`), c = $(`questCutoff_${q}`);
+      return f && c && f.value && c.value && f.value >= c.value;
+    });
+    if (badWindow) { alert(I18N.t("questWindowInvalid")); return; }
     let savedKid;
     if (editingKidId) savedKid = Store.updateKid(editingKidId, { name, objectives: validObjectives, avatar: pickedAvatar });
     else savedKid = Store.addKid({ name, objectives: validObjectives, avatar: pickedAvatar });
@@ -381,6 +402,7 @@
         const titles = $(`questTasks_${q}`).value.split("\n").map((l) => l.trim()).filter(Boolean);
         Store.setQuestTasks(savedKid.id, q, titles);
         Store.setQuestCutoff(savedKid.id, q, $(`questCutoff_${q}`).value);
+        Store.setQuestFrom(savedKid.id, q, $(`questFrom_${q}`).value);
       });
     }
     closeKidModal();

@@ -97,6 +97,8 @@
       if (tasks) entry.tasks = tasks;
       const cutoff = validCutoff(r.cutoff);
       if (cutoff && isTimed(q) && cutoff !== QUESTS[q].cutoff) entry.cutoff = cutoff;
+      const from = validCutoff(r.from);
+      if (from && isTimed(q) && from !== QUESTS[q].from) entry.from = from;
       if (Object.keys(entry).length) out[q] = entry;
     });
     return out;
@@ -303,8 +305,25 @@
     questCutoffFor(kid, q) {
       return (kid.quests && kid.quests[q] && kid.quests[q].cutoff) || QUESTS[q].cutoff;
     },
-    questFromFor(q) {
+    questFromFor(kid, q) {
+      return (kid.quests && kid.quests[q] && kid.quests[q].from) || QUESTS[q].from;
+    },
+    questDefaultFrom(q) {
       return QUESTS[q].from;
+    },
+    // Invalid or empty input restores the default opening time.
+    setQuestFrom(kidId, q, value) {
+      const data = load();
+      const kid = data.kids.find((k) => k.id === kidId);
+      if (!kid || !QUESTS[q]) return null;
+      const from = isTimed(q) ? validCutoff(value) : undefined;
+      kid.quests = kid.quests || {};
+      kid.quests[q] = kid.quests[q] || {};
+      if (from && from !== QUESTS[q].from) kid.quests[q].from = from;
+      else delete kid.quests[q].from;
+      if (!Object.keys(kid.quests[q]).length) delete kid.quests[q];
+      save(data);
+      return kid;
     },
     questIsTimed: isTimed,
     questHasStreak(q) {
@@ -333,7 +352,7 @@
       const d = now || new Date();
       const pad = (n) => String(n).padStart(2, "0");
       const t = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-      if (t < QUESTS[q].from) return "early";
+      if (t < this.questFromFor(kid, q)) return "early";
       return t <= this.questCutoffFor(kid, q) ? "open" : "late";
     },
     todayKey() {
