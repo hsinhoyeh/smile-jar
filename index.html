@@ -27,10 +27,13 @@
       </div>
     </div>
     <div class="topbar-controls">
-      <button id="exportBtn" class="pill" data-i18n="exportBtn">⬇️ Export</button>
-      <button id="importBtn" class="pill" data-i18n="importBtn">⬆️ Import</button>
-      <input id="importFileInput" type="file" accept="application/json,.json" class="hidden" />
-      <button id="howToBtn" class="pill" data-i18n="howTo">How it works</button>
+      <button id="menuBtn" class="pill menu-btn" aria-expanded="false" aria-controls="topMenu" aria-label="Menu">☰</button>
+      <div id="topMenu" class="top-menu">
+        <button id="exportBtn" class="pill" data-i18n="exportBtn">⬇️ Export</button>
+        <button id="importBtn" class="pill" data-i18n="importBtn">⬆️ Import</button>
+        <input id="importFileInput" type="file" accept="application/json,.json" class="hidden" />
+        <button id="howToBtn" class="pill" data-i18n="howTo">How it works</button>
+      </div>
       <div class="lang-switch" role="group" aria-label="Language">
         <button class="lang-btn" data-lang="en">EN</button>
         <button class="lang-btn" data-lang="zh-tw">中文</button>

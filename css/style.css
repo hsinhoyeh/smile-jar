@@ -293,3 +293,24 @@ body.zh { line-height: 1.4; }
 .quest-edit summary { font-weight: 700; cursor: pointer; padding: 4px 0; }
 .quest-times { display: flex; gap: 12px; }
 .quest-times .field { flex: 1; margin-bottom: 6px; }
+
+/* ---------- header on phones: menu collapses behind ☰ ---------- */
+.menu-btn { display: none; }
+.top-menu { display: contents; } /* wide screens: buttons stay inline in the bar */
+@media (max-width: 639px) {
+  .topbar { flex-wrap: wrap; padding: 10px 12px; }
+  .topbar .tagline { display: none; }
+  .topbar { gap: 8px; }
+  .brand { gap: 6px; }
+  .brand-logo { font-size: 28px; }
+  .brand h1 { font-size: 1.15rem; }
+  .lang-btn { padding: 6px 9px; font-size: .85rem; }
+  .menu-btn { padding: 8px 12px; }
+  .topbar-controls { display: contents; } /* menu button + language switch join the header row */
+  .menu-btn { display: inline-block; margin-left: auto; }
+  .top-menu {
+    display: none; flex-basis: 100%; order: 3;
+    flex-wrap: wrap; gap: 8px; padding-top: 4px;
+  }
+  .top-menu.open { display: flex; }
+}

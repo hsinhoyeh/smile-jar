@@ -576,6 +576,14 @@
     $("celebrateCloseBtn").addEventListener("click", closeCelebrate);
     $("celebrateModal").addEventListener("click", (e) => { if (e.target === e.currentTarget) closeCelebrate(); });
 
+    // Phones: export / import / how-it-works live behind the ☰ button.
+    const setMenu = (open) => {
+      $("topMenu").classList.toggle("open", open);
+      $("menuBtn").setAttribute("aria-expanded", String(open));
+    };
+    $("menuBtn").addEventListener("click", () => setMenu(!$("topMenu").classList.contains("open")));
+    $("topMenu").addEventListener("click", (e) => { if (e.target.closest("button")) setMenu(false); });
+
     $("exportBtn").addEventListener("click", exportBackup);
     $("importBtn").addEventListener("click", () => $("importFileInput").click());
     $("importFileInput").addEventListener("change", (e) => {
