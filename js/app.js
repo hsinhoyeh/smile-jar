@@ -9,6 +9,7 @@
   let pickedAvatar = AVATARS[0];
   let objectiveRows = []; // [{title, cost}] while the kid modal is open
   let smileAmount = 1;
+  let activeQuest = null; // which quest tab is showing on narrow screens
   let smileMode = "add"; // "add" | "remove" — which action the smile modal is doing
 
   /* ---------------------------------------------------------------- */
@@ -103,6 +104,22 @@
   function renderQuests(kid) {
     const wrap = $("quests");
     wrap.innerHTML = "";
+    // Below 900px only one quest shows at a time, picked from these tabs
+    // (CSS hides the tabs and shows every quest on wide screens).
+    if (!Store.QUEST_IDS.includes(activeQuest)) activeQuest = Store.QUEST_IDS[0];
+    const tabs = $("questTabs");
+    tabs.innerHTML = "";
+    Store.QUEST_IDS.forEach((q) => {
+      const tab = document.createElement("button");
+      tab.type = "button";
+      tab.className = "quest-tab" + (q === activeQuest ? " active" : "");
+      I18N.setText(tab, questTitle(q));
+      tab.addEventListener("click", () => {
+        activeQuest = q;
+        renderQuests(kid);
+      });
+      tabs.appendChild(tab);
+    });
     Store.QUEST_IDS.forEach((q) => {
       const tasks = Store.questTasksFor(kid, q);
       const today = Store.questToday(kid.id, q);
@@ -112,7 +129,7 @@
       const from = timed ? Store.questFromFor(kid, q) : "";
 
       const sec = document.createElement("section");
-      sec.className = `quest quest-${q}`;
+      sec.className = `quest quest-${q}` + (q === activeQuest ? "" : " quest-inactive");
 
       const h = document.createElement("h3");
       I18N.setText(h, questTitle(q));
@@ -313,10 +330,11 @@
     const wrap = $("questEditFields");
     wrap.innerHTML = "";
     Store.QUEST_IDS.forEach((q) => {
-      const block = document.createElement("div");
-      block.className = "field quest-edit";
+      // Collapsible so the modal stays short on phones.
+      const block = document.createElement("details");
+      block.className = "quest-edit";
 
-      const title = document.createElement("span");
+      const title = document.createElement("summary");
       I18N.setText(title, questTitle(q));
       block.appendChild(title);
 

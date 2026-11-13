@@ -39,7 +39,7 @@ body {
 .brand-logo { font-size: 36px; }
 .brand h1 { font-size: 1.5rem; margin: 0; color: var(--primary-d); }
 .tagline { margin: 2px 0 0; font-size: .85rem; color: var(--muted); }
-.topbar-controls { display: flex; align-items: center; gap: 10px; }
+.topbar-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 
 .lang-switch { display: flex; background: #fff; border-radius: 999px; padding: 3px; box-shadow: var(--shadow); }
 .lang-btn {
@@ -250,18 +250,28 @@ body.zh { line-height: 1.4; }
 }
 
 /* ---------- quests (晚安任務, 上學任務) ---------- */
-/* Quests sit side by side on wider screens (the row breaks out of the
-   520px dashboard column); on phones they stack. */
-#quests { display: grid; grid-template-columns: 1fr; gap: 0 16px; align-items: start; }
-@media (min-width: 640px) {
+/* Quests: one at a time (tabs) below 900px, side by side from 900px up.
+   The wide row breaks out of the 520px dashboard column. */
+.quest-tabs { display: flex; gap: 6px; margin: 16px 0 0; flex-wrap: wrap; }
+.quest-tab {
+  flex: 1; min-width: 0; border: none; border-radius: 12px 12px 0 0; padding: 10px 6px;
+  background: #e4e4ee; font: inherit; font-weight: 700; cursor: pointer; color: var(--muted);
+}
+.quest-tab.active { background: var(--panel); color: var(--ink); box-shadow: var(--shadow); }
+#quests { display: grid; grid-template-columns: 1fr; gap: 0 16px; }
+.quest-inactive { display: none; }
+@media (min-width: 900px) {
+  .quest-tabs { display: none; }
+  .quest-inactive { display: block; }
   #quests {
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     width: min(96vw, 1000px); position: relative; left: 50%; transform: translateX(-50%);
   }
+  #quests .quest { margin: 16px 0; }
 }
 .quest {
   background: #eef0ff; border-radius: var(--radius); padding: 14px 16px;
-  margin: 16px 0; box-shadow: var(--shadow);
+  margin: 0 0 16px; box-shadow: var(--shadow);
 }
 .quest-school { background: #e8f6ec; }
 .quest-outing { background: #fff3e0; }
@@ -279,6 +289,7 @@ body.zh { line-height: 1.4; }
 .quest-badge { opacity: .4; font-size: .9rem; }
 .quest-badge.earned { opacity: 1; font-weight: 700; }
 .quest-note { font-size: .85rem; margin: 8px 0 0; }
-.quest-edit { margin-bottom: 12px; }
+.quest-edit { margin-bottom: 8px; background: #f6f6fb; border-radius: 12px; padding: 8px 12px; }
+.quest-edit summary { font-weight: 700; cursor: pointer; padding: 4px 0; }
 .quest-times { display: flex; gap: 12px; }
 .quest-times .field { flex: 1; margin-bottom: 6px; }
