@@ -37,6 +37,8 @@
     };
     const tasks = sanitizeBedtimeTasks(raw.bedtimeTasks);
     if (tasks) kid.bedtimeTasks = tasks;
+    const cutoff = validCutoff(raw.bedtimeCutoff);
+    if (cutoff) kid.bedtimeCutoff = cutoff;
     return kid;
   }
   // Drops rewards pointing at a kid that didn't survive sanitizeKid().
@@ -58,6 +60,11 @@
   // a translated title by id until the family customises them.
   const DEFAULT_BEDTIME_TASKS = ["toys", "bath", "teeth", "story", "bed"].map((id) => ({ id }));
   const MAX_BEDTIME_TASKS = 10;
+  const DEFAULT_BEDTIME_CUTOFF = "21:55"; // claim must happen before this (local time, HH:MM)
+
+  function validCutoff(v) {
+    return typeof v === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(v) ? v : undefined;
+  }
 
   function sanitizeBedtimeTasks(list) {
     if (!Array.isArray(list)) return undefined;
@@ -246,6 +253,26 @@
       save(data);
       return kid;
     },
+    bedtimeCutoffFor(kid) {
+      return kid.bedtimeCutoff || DEFAULT_BEDTIME_CUTOFF;
+    },
+    // Invalid or empty input restores the default cutoff.
+    setBedtimeCutoff(kidId, value) {
+      const data = load();
+      const kid = data.kids.find((k) => k.id === kidId);
+      if (!kid) return null;
+      const cutoff = validCutoff(value);
+      if (cutoff && cutoff !== DEFAULT_BEDTIME_CUTOFF) kid.bedtimeCutoff = cutoff;
+      else delete kid.bedtimeCutoff;
+      save(data);
+      return kid;
+    },
+    // True while the local clock is still at or before the kid's cutoff.
+    beforeBedtimeCutoff(kid, now) {
+      const d = now || new Date();
+      const pad = (n) => String(n).padStart(2, "0");
+      return `${pad(d.getHours())}:${pad(d.getMinutes())}` <= this.bedtimeCutoffFor(kid);
+    },
     todayKey() {
       return dateKey(new Date());
     },
@@ -281,6 +308,7 @@
       if (!kid) return null;
       const today = this.bedtimeToday(kidId);
       if (today.claimed || today.done.length < this.bedtimeTasksFor(kid).length) return null;
+      if (!this.beforeBedtimeCutoff(kid)) return null;
       const reward = this.addReward(kidId, { amount: 1, reason });
       const data = load();
       const rec = data.bedtime.find((b) => b.kidId === kidId && b.date === this.todayKey());

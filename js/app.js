@@ -123,9 +123,14 @@
     });
 
     I18N.setText($("bedtimeProgress"), I18N.t("bedtimeProgress", { done: today.done.length, total: tasks.length }));
-    const ready = !today.claimed && today.done.length >= tasks.length;
-    $("bedtimeClaimBtn").classList.toggle("hidden", today.claimed);
+    const cutoff = Store.bedtimeCutoffFor(kid);
+    const late = !today.claimed && !Store.beforeBedtimeCutoff(kid);
+    const ready = !today.claimed && !late && today.done.length >= tasks.length;
+    $("bedtimeClaimBtn").classList.toggle("hidden", today.claimed || late);
     $("bedtimeClaimBtn").disabled = !ready;
+    $("bedtimePast").classList.toggle("hidden", !late);
+    I18N.setText($("bedtimePast"), I18N.t("bedtimePastCutoff", { time: cutoff }));
+    I18N.setText($("bedtimeNote"), I18N.t("bedtimeNote", { time: cutoff }));
     $("bedtimeClaimed").classList.toggle("hidden", !today.claimed);
     I18N.setText($("bedtimeClaimed"), I18N.t("bedtimeClaimed"));
 
@@ -273,6 +278,7 @@
     I18N.setKey($("kidModalTitle"), kid ? "edit" : "addKid");
     $("deleteKidBtn").classList.toggle("hidden", !kid);
     // Show only custom titles; defaults stay blank so they keep following the language.
+    $("bedtimeCutoffInput").value = kid ? Store.bedtimeCutoffFor(kid) : "21:55";
     $("bedtimeTasksInput").value = kid && kid.bedtimeTasks ? kid.bedtimeTasks.map((t) => t.title).join("\n") : "";
     renderAvatarPicker();
     renderObjectiveRows();
@@ -293,7 +299,10 @@
     let savedKid;
     if (editingKidId) savedKid = Store.updateKid(editingKidId, { name, objectives: validObjectives, avatar: pickedAvatar });
     else savedKid = Store.addKid({ name, objectives: validObjectives, avatar: pickedAvatar });
-    if (savedKid) Store.setBedtimeTasks(savedKid.id, taskTitles);
+    if (savedKid) {
+      Store.setBedtimeTasks(savedKid.id, taskTitles);
+      Store.setBedtimeCutoff(savedKid.id, $("bedtimeCutoffInput").value);
+    }
     closeKidModal();
     renderAll();
   }
