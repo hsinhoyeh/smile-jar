@@ -27,7 +27,7 @@
   // way addKid() would build one from form input.
   function sanitizeKid(raw) {
     if (!raw || typeof raw !== "object") return null;
-    return {
+    const kid = {
       id: typeof raw.id === "string" && raw.id ? raw.id : uid(),
       name: (raw.name || "").toString().trim().slice(0, 24),
       objectives: sanitizeObjectives(raw.objectives),
@@ -35,6 +35,9 @@
       cycleStart: Number(raw.cycleStart) || Date.now(),
       createdAt: Number(raw.createdAt) || Date.now(),
     };
+    const tasks = sanitizeBedtimeTasks(raw.bedtimeTasks);
+    if (tasks) kid.bedtimeTasks = tasks;
+    return kid;
   }
   // Drops rewards pointing at a kid that didn't survive sanitizeKid().
   function sanitizeReward(raw, validKidIds) {
@@ -51,6 +54,34 @@
     };
   }
 
+  // Bedtime quest ("晚安任務"). Default tasks carry only an id; the UI looks up
+  // a translated title by id until the family customises them.
+  const DEFAULT_BEDTIME_TASKS = ["toys", "bath", "teeth", "story", "bed"].map((id) => ({ id }));
+  const MAX_BEDTIME_TASKS = 10;
+
+  function sanitizeBedtimeTasks(list) {
+    if (!Array.isArray(list)) return undefined;
+    const clean = list
+      .map((t) => ({ id: (t && t.id) || uid(), title: ((t && t.title) || "").toString().trim().slice(0, 40) }))
+      .filter((t) => t.title)
+      .slice(0, MAX_BEDTIME_TASKS);
+    return clean.length ? clean : undefined;
+  }
+  function sanitizeBedtimeLog(raw, validKidIds) {
+    if (!raw || typeof raw !== "object" || !validKidIds.has(raw.kidId)) return null;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(raw.date)) return null;
+    return {
+      kidId: raw.kidId,
+      date: raw.date,
+      done: Array.isArray(raw.done) ? raw.done.filter((x) => typeof x === "string") : [],
+      claimed: !!raw.claimed,
+    };
+  }
+  function dateKey(d) {
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  }
+
   function load() {
     try {
       const data = JSON.parse(localStorage.getItem(KEY_DATA));
@@ -65,11 +96,12 @@
             migrated = true;
           }
         });
+        if (!Array.isArray(data.bedtime)) data.bedtime = [];
         if (migrated) save(data);
         return data;
       }
     } catch (e) {}
-    return { kids: [], rewards: [], activeKidId: null };
+    return { kids: [], rewards: [], activeKidId: null, bedtime: [] };
   }
   function save(data) {
     localStorage.setItem(KEY_DATA, JSON.stringify(data));
@@ -119,6 +151,7 @@
       const data = load();
       data.kids = data.kids.filter((k) => k.id !== id);
       data.rewards = data.rewards.filter((r) => r.kidId !== id);
+      data.bedtime = data.bedtime.filter((b) => b.kidId !== id);
       if (data.activeKidId === id) data.activeKidId = (data.kids[0] && data.kids[0].id) || null;
       save(data);
     },
@@ -197,6 +230,80 @@
       return kid;
     },
 
+    /* ---- bedtime quest (晚安任務) ---- */
+    // Tasks are [{id}] (defaults, title from i18n) or [{id, title}] (custom).
+    bedtimeTasksFor(kid) {
+      return kid.bedtimeTasks || DEFAULT_BEDTIME_TASKS;
+    },
+    // Pass an array of titles; an empty array restores the defaults.
+    setBedtimeTasks(kidId, titles) {
+      const data = load();
+      const kid = data.kids.find((k) => k.id === kidId);
+      if (!kid) return null;
+      const tasks = sanitizeBedtimeTasks((titles || []).map((title) => ({ title })));
+      if (tasks) kid.bedtimeTasks = tasks;
+      else delete kid.bedtimeTasks;
+      save(data);
+      return kid;
+    },
+    todayKey() {
+      return dateKey(new Date());
+    },
+    // Tonight's progress for a kid: { done: [taskId], claimed }.
+    bedtimeToday(kidId) {
+      const data = load();
+      const kid = data.kids.find((k) => k.id === kidId);
+      const rec = data.bedtime.find((b) => b.kidId === kidId && b.date === this.todayKey());
+      const valid = new Set(kid ? this.bedtimeTasksFor(kid).map((t) => t.id) : []);
+      return {
+        done: rec ? rec.done.filter((id) => valid.has(id)) : [],
+        claimed: !!(rec && rec.claimed),
+      };
+    },
+    toggleBedtimeTask(kidId, taskId) {
+      const data = load();
+      const date = this.todayKey();
+      let rec = data.bedtime.find((b) => b.kidId === kidId && b.date === date);
+      if (!rec) {
+        rec = { kidId, date, done: [], claimed: false };
+        data.bedtime.push(rec);
+      }
+      if (rec.claimed) return; // locked once tonight's smile is claimed
+      const i = rec.done.indexOf(taskId);
+      if (i >= 0) rec.done.splice(i, 1);
+      else rec.done.push(taskId);
+      save(data);
+    },
+    // Awards exactly one smile per kid per night, and only when every task
+    // is ticked. Returns the reward, or null if not allowed.
+    claimBedtime(kidId, reason) {
+      const kid = this.getKid(kidId);
+      if (!kid) return null;
+      const today = this.bedtimeToday(kidId);
+      if (today.claimed || today.done.length < this.bedtimeTasksFor(kid).length) return null;
+      const reward = this.addReward(kidId, { amount: 1, reason });
+      const data = load();
+      const rec = data.bedtime.find((b) => b.kidId === kidId && b.date === this.todayKey());
+      if (rec) rec.claimed = true;
+      save(data);
+      return reward;
+    },
+    // Consecutive claimed nights ending tonight (or last night, if tonight
+    // isn't claimed yet — so the streak doesn't vanish during the evening).
+    bedtimeStreak(kidId) {
+      const claimed = new Set(
+        load().bedtime.filter((b) => b.kidId === kidId && b.claimed).map((b) => b.date)
+      );
+      const d = new Date();
+      if (!claimed.has(dateKey(d))) d.setDate(d.getDate() - 1);
+      let streak = 0;
+      while (claimed.has(dateKey(d))) {
+        streak++;
+        d.setDate(d.getDate() - 1);
+      }
+      return streak;
+    },
+
     /* ---- export / import (backup & restore) ---- */
     // Everything needed to restore the jar elsewhere: kids, full reward
     // history, and which tab was active.
@@ -208,6 +315,7 @@
         exportedAt: Date.now(),
         kids: data.kids,
         rewards: data.rewards,
+        bedtime: data.bedtime,
         activeKidId: data.activeKidId,
       };
     },
@@ -224,7 +332,10 @@
         .map((r) => sanitizeReward(r, kidIds))
         .filter(Boolean);
       const activeKidId = kidIds.has(payload.activeKidId) ? payload.activeKidId : (kids[0] ? kids[0].id : null);
-      save({ kids, rewards, activeKidId });
+      const bedtime = (Array.isArray(payload.bedtime) ? payload.bedtime : [])
+        .map((b) => sanitizeBedtimeLog(b, kidIds))
+        .filter(Boolean);
+      save({ kids, rewards, bedtime, activeKidId });
       return { ok: true, kidCount: kids.length, rewardCount: rewards.length };
     },
   };

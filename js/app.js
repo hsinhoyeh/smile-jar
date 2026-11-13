@@ -65,6 +65,7 @@
     $("jarEmojis").textContent = kid.avatar.repeat(emojiCount);
 
     renderObjectivesBreakdown(kid);
+    renderBedtime(kid);
     renderHistory(kid.id);
   }
 
@@ -88,6 +89,63 @@
       li.appendChild(costSpan);
       list.appendChild(li);
     });
+  }
+
+  function bedtimeTaskTitle(t) {
+    return t.title || I18N.t("task_" + t.id);
+  }
+
+  // Bedtime quest: tick tasks, then claim one smile per night. Deliberately
+  // no celebration animation — the evening should wind down, not wind up.
+  function renderBedtime(kid) {
+    const tasks = Store.bedtimeTasksFor(kid);
+    const today = Store.bedtimeToday(kid.id);
+    const list = $("bedtimeList");
+    list.innerHTML = "";
+    tasks.forEach((t) => {
+      const li = document.createElement("li");
+      const label = document.createElement("label");
+      label.className = "bedtime-task";
+      const box = document.createElement("input");
+      box.type = "checkbox";
+      box.checked = today.done.includes(t.id);
+      box.disabled = today.claimed;
+      box.addEventListener("change", () => {
+        Store.toggleBedtimeTask(kid.id, t.id);
+        renderAll();
+      });
+      const text = document.createElement("span");
+      text.textContent = bedtimeTaskTitle(t);
+      label.appendChild(box);
+      label.appendChild(text);
+      li.appendChild(label);
+      list.appendChild(li);
+    });
+
+    I18N.setText($("bedtimeProgress"), I18N.t("bedtimeProgress", { done: today.done.length, total: tasks.length }));
+    const ready = !today.claimed && today.done.length >= tasks.length;
+    $("bedtimeClaimBtn").classList.toggle("hidden", today.claimed);
+    $("bedtimeClaimBtn").disabled = !ready;
+    $("bedtimeClaimed").classList.toggle("hidden", !today.claimed);
+    I18N.setText($("bedtimeClaimed"), I18N.t("bedtimeClaimed"));
+
+    const streak = Store.bedtimeStreak(kid.id);
+    const badge = (n, key) => `<span class="bedtime-badge${streak >= n ? " earned" : ""}">${I18N.markup(I18N.t(key))}</span>`;
+    $("bedtimeStreak").innerHTML =
+      `<strong>${I18N.markup(I18N.t("bedtimeStreak", { n: streak }))}</strong> ` +
+      badge(3, "bedtimeBadge3") + badge(7, "bedtimeBadge7");
+  }
+
+  function claimBedtimeNow() {
+    const kidId = Store.getActiveKidId();
+    const kid = Store.getKid(kidId);
+    if (!kid) return;
+    const goal = Store.goalFor(kid);
+    const before = Store.currentCount(kidId);
+    if (!Store.claimBedtime(kidId, I18N.t("bedtimeClaimReason"))) return;
+    const after = Store.currentCount(kidId);
+    renderAll();
+    if (before < goal && after >= goal) openCelebrate(kid);
   }
 
   function renderHistory(kidId) {
@@ -214,6 +272,8 @@
     $("kidNameInput").value = kid ? kid.name : "";
     I18N.setKey($("kidModalTitle"), kid ? "edit" : "addKid");
     $("deleteKidBtn").classList.toggle("hidden", !kid);
+    // Show only custom titles; defaults stay blank so they keep following the language.
+    $("bedtimeTasksInput").value = kid && kid.bedtimeTasks ? kid.bedtimeTasks.map((t) => t.title).join("\n") : "";
     renderAvatarPicker();
     renderObjectiveRows();
     $("kidModal").classList.remove("hidden");
@@ -229,8 +289,11 @@
       .map((o) => ({ title: (o.title || "").trim(), cost: Number(o.cost) }))
       .filter((o) => o.title && o.cost > 0);
     if (!validObjectives.length) { alert(I18N.t("objectivesRequired")); return; }
-    if (editingKidId) Store.updateKid(editingKidId, { name, objectives: validObjectives, avatar: pickedAvatar });
-    else Store.addKid({ name, objectives: validObjectives, avatar: pickedAvatar });
+    const taskTitles = $("bedtimeTasksInput").value.split("\n").map((l) => l.trim()).filter(Boolean);
+    let savedKid;
+    if (editingKidId) savedKid = Store.updateKid(editingKidId, { name, objectives: validObjectives, avatar: pickedAvatar });
+    else savedKid = Store.addKid({ name, objectives: validObjectives, avatar: pickedAvatar });
+    if (savedKid) Store.setBedtimeTasks(savedKid.id, taskTitles);
     closeKidModal();
     renderAll();
   }
@@ -371,6 +434,7 @@
     });
     $("kidModal").addEventListener("click", (e) => { if (e.target === e.currentTarget) closeKidModal(); });
 
+    $("bedtimeClaimBtn").addEventListener("click", claimBedtimeNow);
     $("addSmileBtn").addEventListener("click", () => openSmileModal("add"));
     $("removeSmileBtn").addEventListener("click", () => openSmileModal("remove"));
     $("smileCancelBtn").addEventListener("click", closeSmileModal);

@@ -29,6 +29,11 @@ step, no backend, **no login** — everything stays on your device
   it, not just a number.
 - **Remove a smile** for a rule broken, also with a required reason. Both
   live in the same honest history log; the jar just never shows below empty.
+- **Bedtime Quest (晚安任務)** — a per-kid nightly checklist (tidy toys, bath,
+  brush teeth, story, in bed on time; editable per kid). Tick everything,
+  then claim **one** 😊 per night into the same jar. A missed night just
+  means no smile — nothing is deducted. Tracks a consecutive-night streak
+  with 3-night and 7-night milestones, and is included in export/import.
 - **Jar dashboard** — a fill-up jar + progress bar showing how close each
   kid is to their goal, a goal breakdown when there's more than one
   objective, and a lifetime total.
