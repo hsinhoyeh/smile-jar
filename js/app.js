@@ -65,7 +65,7 @@
     $("jarEmojis").textContent = kid.avatar.repeat(emojiCount);
 
     renderObjectivesBreakdown(kid);
-    renderBedtime(kid);
+    renderQuests(kid);
     renderHistory(kid.id);
   }
 
@@ -91,63 +91,102 @@
     });
   }
 
-  function bedtimeTaskTitle(t) {
+  function questTaskTitle(t) {
     return t.title || I18N.t("task_" + t.id);
   }
-
-  // Bedtime quest: tick tasks, then claim one smile per night. Deliberately
-  // no celebration animation — the evening should wind down, not wind up.
-  function renderBedtime(kid) {
-    const tasks = Store.bedtimeTasksFor(kid);
-    const today = Store.bedtimeToday(kid.id);
-    const list = $("bedtimeList");
-    list.innerHTML = "";
-    tasks.forEach((t) => {
-      const li = document.createElement("li");
-      const label = document.createElement("label");
-      label.className = "bedtime-task";
-      const box = document.createElement("input");
-      box.type = "checkbox";
-      box.checked = today.done.includes(t.id);
-      box.disabled = today.claimed;
-      box.addEventListener("change", () => {
-        Store.toggleBedtimeTask(kid.id, t.id);
-        renderAll();
-      });
-      const text = document.createElement("span");
-      text.textContent = bedtimeTaskTitle(t);
-      label.appendChild(box);
-      label.appendChild(text);
-      li.appendChild(label);
-      list.appendChild(li);
-    });
-
-    I18N.setText($("bedtimeProgress"), I18N.t("bedtimeProgress", { done: today.done.length, total: tasks.length }));
-    const cutoff = Store.bedtimeCutoffFor(kid);
-    const late = !today.claimed && !Store.beforeBedtimeCutoff(kid);
-    const ready = !today.claimed && !late && today.done.length >= tasks.length;
-    $("bedtimeClaimBtn").classList.toggle("hidden", today.claimed || late);
-    $("bedtimeClaimBtn").disabled = !ready;
-    $("bedtimePast").classList.toggle("hidden", !late);
-    I18N.setText($("bedtimePast"), I18N.t("bedtimePastCutoff", { time: cutoff }));
-    I18N.setText($("bedtimeNote"), I18N.t("bedtimeNote", { time: cutoff }));
-    $("bedtimeClaimed").classList.toggle("hidden", !today.claimed);
-    I18N.setText($("bedtimeClaimed"), I18N.t("bedtimeClaimed"));
-
-    const streak = Store.bedtimeStreak(kid.id);
-    const badge = (n, key) => `<span class="bedtime-badge${streak >= n ? " earned" : ""}">${I18N.markup(I18N.t(key))}</span>`;
-    $("bedtimeStreak").innerHTML =
-      `<strong>${I18N.markup(I18N.t("bedtimeStreak", { n: streak }))}</strong> ` +
-      badge(3, "bedtimeBadge3") + badge(7, "bedtimeBadge7");
+  function questTitle(q) {
+    return I18N.t("quest" + q.charAt(0).toUpperCase() + q.slice(1) + "Title");
   }
 
-  function claimBedtimeNow() {
+  // Quests: tick tasks, then claim one smile per day inside the quest's time
+  // window. Deliberately no celebration animation — keep it calm.
+  function renderQuests(kid) {
+    const wrap = $("quests");
+    wrap.innerHTML = "";
+    Store.QUEST_IDS.forEach((q) => {
+      const tasks = Store.questTasksFor(kid, q);
+      const today = Store.questToday(kid.id, q);
+      const timed = Store.questIsTimed(q);
+      const win = today.claimed ? "open" : Store.questWindow(kid, q);
+      const cutoff = timed ? Store.questCutoffFor(kid, q) : "";
+      const from = timed ? Store.questFromFor(q) : "";
+
+      const sec = document.createElement("section");
+      sec.className = `quest quest-${q}`;
+
+      const h = document.createElement("h3");
+      I18N.setText(h, questTitle(q));
+      sec.appendChild(h);
+
+      const ul = document.createElement("ul");
+      ul.className = "quest-list";
+      tasks.forEach((t) => {
+        const li = document.createElement("li");
+        const label = document.createElement("label");
+        label.className = "quest-task";
+        const box = document.createElement("input");
+        box.type = "checkbox";
+        box.checked = today.done.includes(t.id);
+        box.disabled = today.claimed;
+        box.addEventListener("change", () => {
+          Store.toggleQuestTask(kid.id, q, t.id);
+          renderAll();
+        });
+        const text = document.createElement("span");
+        text.textContent = questTaskTitle(t);
+        label.appendChild(box);
+        label.appendChild(text);
+        li.appendChild(label);
+        ul.appendChild(li);
+      });
+      sec.appendChild(ul);
+
+      const prog = document.createElement("div");
+      prog.className = "quest-progress";
+      I18N.setText(prog, I18N.t("questProgress", { done: today.done.length, total: tasks.length }));
+      sec.appendChild(prog);
+
+      if (today.claimed || win !== "open") {
+        const msg = document.createElement("p");
+        msg.className = "quest-status";
+        const key = today.claimed ? "questClaimed_" + q : win === "early" ? "questEarly" : "questLate";
+        I18N.setText(msg, I18N.t(key, { time: cutoff, from }));
+        sec.appendChild(msg);
+      } else {
+        const btn = document.createElement("button");
+        btn.className = "btn btn-primary";
+        btn.disabled = today.done.length < tasks.length;
+        I18N.setText(btn, I18N.t("questClaimBtn"));
+        btn.addEventListener("click", () => claimQuestNow(q));
+        sec.appendChild(btn);
+      }
+
+      if (Store.questHasStreak(q)) {
+        const streak = Store.questStreak(kid.id, q);
+        const badge = (n) =>
+          `<span class="quest-badge${streak >= n ? " earned" : ""}">${I18N.markup(I18N.t(`questBadge${n}_${q}`))}</span>`;
+        const st = document.createElement("div");
+        st.className = "quest-streak";
+        st.innerHTML = `<strong>${I18N.markup(I18N.t("questStreak_" + q, { n: streak }))}</strong> ` + badge(3) + badge(7);
+        sec.appendChild(st);
+      }
+
+      const note = document.createElement("p");
+      note.className = "muted quest-note";
+      I18N.setText(note, timed ? I18N.t("questNote", { time: cutoff, from }) : I18N.t("questNoteFree"));
+      sec.appendChild(note);
+
+      wrap.appendChild(sec);
+    });
+  }
+
+  function claimQuestNow(q) {
     const kidId = Store.getActiveKidId();
     const kid = Store.getKid(kidId);
     if (!kid) return;
     const goal = Store.goalFor(kid);
     const before = Store.currentCount(kidId);
-    if (!Store.claimBedtime(kidId, I18N.t("bedtimeClaimReason"))) return;
+    if (!Store.claimQuest(kidId, q, I18N.t("questReason_" + q))) return;
     const after = Store.currentCount(kidId);
     renderAll();
     if (before < goal && after >= goal) openCelebrate(kid);
@@ -268,6 +307,47 @@
     updateObjectiveTotal();
   }
 
+  // One block per quest: cutoff time + task list. Only custom titles are
+  // shown; blank means "defaults", which keep following the language.
+  function renderQuestEditFields(kid) {
+    const wrap = $("questEditFields");
+    wrap.innerHTML = "";
+    Store.QUEST_IDS.forEach((q) => {
+      const block = document.createElement("div");
+      block.className = "field quest-edit";
+
+      const title = document.createElement("span");
+      I18N.setText(title, questTitle(q));
+      block.appendChild(title);
+
+      const timeLabel = document.createElement("label");
+      timeLabel.className = Store.questIsTimed(q) ? "field" : "hidden";
+      const timeText = document.createElement("span");
+      I18N.setText(timeText, I18N.t("questCutoffLabel"));
+      const time = document.createElement("input");
+      time.type = "time";
+      time.id = `questCutoff_${q}`;
+      time.value = kid ? Store.questCutoffFor(kid, q) : Store.questDefaultCutoff(q);
+      timeLabel.appendChild(timeText);
+      timeLabel.appendChild(time);
+      block.appendChild(timeLabel);
+
+      const hint = document.createElement("small");
+      hint.className = "hint";
+      I18N.setText(hint, I18N.t("questEditHint"));
+      block.appendChild(hint);
+
+      const ta = document.createElement("textarea");
+      ta.id = `questTasks_${q}`;
+      ta.rows = 5;
+      const custom = kid && kid.quests && kid.quests[q] && kid.quests[q].tasks;
+      ta.value = custom ? custom.map((t) => t.title).join("\n") : "";
+      block.appendChild(ta);
+
+      wrap.appendChild(block);
+    });
+  }
+
   function openKidModal(kid) {
     editingKidId = kid ? kid.id : null;
     pickedAvatar = kid ? kid.avatar : AVATARS[0];
@@ -277,9 +357,7 @@
     $("kidNameInput").value = kid ? kid.name : "";
     I18N.setKey($("kidModalTitle"), kid ? "edit" : "addKid");
     $("deleteKidBtn").classList.toggle("hidden", !kid);
-    // Show only custom titles; defaults stay blank so they keep following the language.
-    $("bedtimeCutoffInput").value = kid ? Store.bedtimeCutoffFor(kid) : "21:55";
-    $("bedtimeTasksInput").value = kid && kid.bedtimeTasks ? kid.bedtimeTasks.map((t) => t.title).join("\n") : "";
+    renderQuestEditFields(kid);
     renderAvatarPicker();
     renderObjectiveRows();
     $("kidModal").classList.remove("hidden");
@@ -295,13 +373,15 @@
       .map((o) => ({ title: (o.title || "").trim(), cost: Number(o.cost) }))
       .filter((o) => o.title && o.cost > 0);
     if (!validObjectives.length) { alert(I18N.t("objectivesRequired")); return; }
-    const taskTitles = $("bedtimeTasksInput").value.split("\n").map((l) => l.trim()).filter(Boolean);
     let savedKid;
     if (editingKidId) savedKid = Store.updateKid(editingKidId, { name, objectives: validObjectives, avatar: pickedAvatar });
     else savedKid = Store.addKid({ name, objectives: validObjectives, avatar: pickedAvatar });
     if (savedKid) {
-      Store.setBedtimeTasks(savedKid.id, taskTitles);
-      Store.setBedtimeCutoff(savedKid.id, $("bedtimeCutoffInput").value);
+      Store.QUEST_IDS.forEach((q) => {
+        const titles = $(`questTasks_${q}`).value.split("\n").map((l) => l.trim()).filter(Boolean);
+        Store.setQuestTasks(savedKid.id, q, titles);
+        Store.setQuestCutoff(savedKid.id, q, $(`questCutoff_${q}`).value);
+      });
     }
     closeKidModal();
     renderAll();
@@ -443,7 +523,6 @@
     });
     $("kidModal").addEventListener("click", (e) => { if (e.target === e.currentTarget) closeKidModal(); });
 
-    $("bedtimeClaimBtn").addEventListener("click", claimBedtimeNow);
     $("addSmileBtn").addEventListener("click", () => openSmileModal("add"));
     $("removeSmileBtn").addEventListener("click", () => openSmileModal("remove"));
     $("smileCancelBtn").addEventListener("click", closeSmileModal);

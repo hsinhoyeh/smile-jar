@@ -74,16 +74,7 @@
         <ul id="objectivesBreakdownList" class="objectives-breakdown-list"></ul>
       </section>
 
-      <section id="bedtime" class="bedtime">
-        <h3 data-i18n="bedtimeTitle">🌙 Bedtime Quest</h3>
-        <ul id="bedtimeList" class="bedtime-list"></ul>
-        <div id="bedtimeProgress" class="bedtime-progress"></div>
-        <button id="bedtimeClaimBtn" class="btn btn-primary" data-i18n="bedtimeClaimBtn">Claim 1 smile 😊</button>
-        <p id="bedtimeClaimed" class="bedtime-claimed hidden"></p>
-        <div id="bedtimeStreak" class="bedtime-streak"></div>
-        <p id="bedtimePast" class="bedtime-claimed hidden"></p>
-        <p id="bedtimeNote" class="muted bedtime-note"></p>
-      </section>
+      <div id="quests"></div>
 
       <button id="addSmileBtn" class="btn btn-primary btn-big" data-i18n="addSmileBtn">😊 Add a Smile</button>
       <button id="removeSmileBtn" class="btn btn-remove" data-i18n="removeSmileBtn">➖ Remove Smiles</button>
@@ -115,15 +106,7 @@
         <button type="button" id="addObjectiveBtn" class="btn btn-link-small" data-i18n="addObjective">+ Add another goal</button>
         <div id="objectiveTotal" class="objective-total"></div>
       </div>
-      <label class="field">
-        <span data-i18n="bedtimeCutoffLabel">Claim by (bedtime)</span>
-        <input id="bedtimeCutoffInput" type="time" value="21:55" />
-      </label>
-      <label class="field" id="bedtimeEditField">
-        <span data-i18n="bedtimeEditLabel">Bedtime tasks</span>
-        <small class="hint" data-i18n="bedtimeEditHint"></small>
-        <textarea id="bedtimeTasksInput" rows="5"></textarea>
-      </label>
+      <div id="questEditFields"></div>
       <div class="field">
         <span data-i18n="avatarLabel">Pick an icon</span>
         <div id="avatarPicker" class="avatar-picker"></div>
